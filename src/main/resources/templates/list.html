@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:action="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>List</title>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div class="container list_row">
+    <h2 class="title">Products you need to buy <span class="add_product" style="color: blue; background: rgba(0, 0, 255, .1);line-height: 20px;width: 20px;height: 20px;display: inline-block;text-align: center;border-radius: 50%;padding: 6px;cursor:pointer;">+</span></h2>
+    <div class="products_list"></div>
+
+    </div>
+</div>
+
+<script>
+    $(".add_product").on("click", function (){
+        $.ajax({
+            url: "/api/new/",
+            processData: false,
+            contentType: false,
+            type: 'POST'
+        }).done(function (data){
+            AppendProduct(data.id, "", false);
+        });
+    });
+
+    function AppendProduct(id, text, status) {
+        $(".products_list").append('<div class="product" data-id="'+id+'">\n' +
+            '                <div class="icon">\n' +
+            '                    <img src="/static/svg/item.svg" />\n' +
+            '                </div>\n' +
+            '                <div class="name">\n' +
+            '                    <input onkeyup="UpdateName('+id+')" type="text" value="'+text+'" placeholder="Product Name" />\n' +
+            '                </div>\n' +
+            '                <div onclick="UpdateStatus('+id+')" class="checkbox status">\n' +
+            '                    <div class="circle"></div>\n' +
+            '                </div>\n' +
+            '                <div onclick="Delete('+id+')" class="checkbox delete">❌</div>\n' +
+            '            </div>');
+
+        if( status === true )
+            $(".products_list .product:last-child").find(".status").addClass("active")
+
+    }
+
+    function UpdateStatus(id) {
+        $.ajax({
+            url: "/api/buy/" + id,
+            processData: false,
+            contentType: false,
+            type: 'PUT'
+        }).done(function (){
+            if( $(".product[data-id='"+id+"'] .status").hasClass("active") )
+                $(".product[data-id='"+id+"'] .status").removeClass("active");
+            else
+                $(".product[data-id='"+id+"'] .status").addClass("active");
+        });
+    }
+
+    function Delete(id) {
+        $.ajax({
+            url: "/api/delete/" + id,
+            processData: false,
+            contentType: false,
+            type: 'DELETE'
+        }).done(function (){
+            $(".product[data-id='"+id+"']").remove();
+        });
+    }
+
+    function UpdateName(id){
+        let fd = new FormData();
+        fd.append('text', $(".product[data-id='"+id+"'] input").val());
+        $.ajax({
+            url: "/api/update/" + id,
+            data: fd,
+            processData: false,
+            contentType: false,
+            type: 'PUT'
+        });
+    }
+
+    $(document).ready(function(){
+        $.ajax({
+            url: "/api/list",
+            processData: false,
+            contentType: false,
+            type: 'GET'
+        }).done(function (data){
+            $.each(data, function (id, item) {
+                AppendProduct(id, item._text, item._isBought);
+            });
+        });
+    });
+</script>
+</body>
+</html>
